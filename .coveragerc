@@ -1,0 +1,6 @@
+[run]
+omit = 
+        ./medvae/_version.py
+        ./medvae/__init__.py
+        ./medvae/__main__.py
+        ./medvae/ui/medvae_command_line.py
