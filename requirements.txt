@@ -3,3 +3,7 @@
 # confuse it with the software requirements, which may be listed in
 # docs/requirements.rst
 numpy
+torch
+pytorch-lightning
+matplotlib
+medmnist
