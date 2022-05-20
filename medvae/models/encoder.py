@@ -12,7 +12,7 @@ import medvae.models.utils as u
 ## Classic FC Encoder-Decoders
 class Encoder(nn.Module):
     def __init__(self,
-                 layer_sizes:List[int],
+                 num_filters:List[int],
                  input_shape:List[int]):
         """
         Instantiate the Encoder module.
@@ -24,9 +24,9 @@ class Encoder(nn.Module):
         """
         super(Encoder, self).__init__()
         self.layers = nn.ModuleList([nn.Linear(item,
-                                               layer_sizes[i+1])
-                                     for i, item in enumerate(layer_sizes)
-                                     if i<(len(layer_sizes)-1)])
+                                               num_filters[i+1])
+                                     for i, item in enumerate(num_filters)
+                                     if i<(len(num_filters)-1)])
         self.input_shape = input_shape
 
     def forward(self, x:torch.Tensor)->torch.Tensor:
@@ -126,3 +126,60 @@ class ConvDecoder(ConvEncoder):
         """
         """
         raise NotImplementedError
+
+
+## Variational Encoders
+class VariationalEncoder(Encoder):
+    """
+    """
+    def __init__(self,
+                 num_filters:List[int],
+                 input_shape:List[int],
+                 latent_dim:int):
+        """
+        :param num_filters: List[int]
+        :param input_shape: List[int]
+        :param latent_dim: List[int]
+        """
+        super(VariationalEncoder, self).__init__(num_filters, input_shape)
+        self.latent_dim_mu = nn.Linear(num_filters[-1], latent_dim)
+        self.latent_dim_sigma = nn.Linear(num_filters[-1], latent_dim)
+        self.log_scale = nn.Parameter(torch.Tensor([0.0]))
+
+    def gaussian_likelihood(self,
+                            x_hat:torch.Tensor,
+                            logscale:torch.Tensor,
+                            x:torch.Tensor):
+        """
+        :param x_hat: torch.Tensor, reconstructed
+                      batch from sampled latent dim.
+        :param logscale: torch.Tensor, 0.0
+        :param x: torch.Tensor, input data batch.
+        """
+        scale = torch.exp(logscale)
+        dist = torch.distributions.Normal(x_hat, scale)
+
+        # measure prob of seeing data x given recon x_hat
+        log_pxz = dist.log_prob(x)
+        return log_pxz.sum(dim=(range(len(self.input_shape))))
+    
+    def kl_divergence(self,
+                      z:torch.Tensor,
+                      mu:torch.Tensor,
+                      std:torch.Tensor)->torch.Tensor:
+        """
+        KL-divergence function
+        :param z: torch.Tensor, resampled latent vector.
+        :param mu: torch.Tensor, mean 
+        :param std: torch.Tensor, standard deviation
+        :return: torch.Tensor, [B,]
+        """
+        p = torch.distributions.Normal(torch.zeros_like(mu), torch.ones_like(std))
+        q = torch.distributions.Normal(mu, std)
+
+        log_qzx = q.log_prob(z) # Q(z|x)
+        log_pz = p.log_prob(z) # Proba z near normal dist
+
+        kl = (log_qzx - log_pz)
+        kl = kl.sum(-1)
+        return kl

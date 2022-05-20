@@ -8,7 +8,7 @@ import pytest
 import torch
 from medvae.models.utils import check_input_lists
 from medvae.models import encoder as e
-from medvae.models.vae import VAE as V
+from medvae.models.ae import AE as V
 from medvae.models.encoder import ConvEncoder as CE
 
 @pytest.mark.parametrize("test_inputs", [[[1,2], [1, 2, 3], [1, 2, 3]],
@@ -52,7 +52,7 @@ def test_decoder_build(layers_shapes, input_shape, dummy_shape, out_shape):
 @pytest.mark.parametrize("layers_shapes,input_shape", [([10,5,4], [1, 5, 2],),
                                                        ([100,50,30,20,3], [1, 10, 10])
                                                       ])
-def test_VAE_build(layers_shapes, input_shape):
+def test_AE_build(layers_shapes, input_shape):
     test_V = V(layers_shapes, input_shape)
     output = test_V.forward(torch.ones((1,*input_shape)))
     assert output.shape == (1, *input_shape)
