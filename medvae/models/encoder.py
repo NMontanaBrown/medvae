@@ -13,7 +13,8 @@ import medvae.models.utils as u
 class Encoder(nn.Module):
     def __init__(self,
                  num_filters:List[int],
-                 input_shape:List[int]):
+                 input_shape:List[int],
+                 **kwargs):
         """
         Instantiate the Encoder module.
         :param layer_sizes: List[int], number of
@@ -22,7 +23,7 @@ class Encoder(nn.Module):
         :param input_shape: List[int], Ch first input shape to
                             Encoder.
         """
-        super(Encoder, self).__init__()
+        super(Encoder, self).__init__(**kwargs)
         self.layers = nn.ModuleList([nn.Linear(item,
                                                num_filters[i+1])
                                      for i, item in enumerate(num_filters)
@@ -68,11 +69,11 @@ class ConvEncoder(nn.Module):
     def __init__(self,
                  num_filters:List[int],
                  input_shape:List[int],
-                 latent_dims:int,
                  kernel_size:List[int],
                  stride:List[int],
                  padding:List[int],
-                 padding_mode:str='zeros'):
+                 padding_mode:str='zeros',
+                 **kwargs):
         """
         Configurable convolutional encoder.
         :param num_filters: List[int], num filters for
@@ -86,7 +87,7 @@ class ConvEncoder(nn.Module):
         :param padding_mode: str
         :raises:
         """
-        super(ConvEncoder, self).__init__()
+        super(ConvEncoder, self).__init__(**kwargs)
         # Check all inputs have same dims
         input_lists = [num_filters, kernel_size, stride, padding]
         u.check_input_lists(input_lists)
@@ -129,19 +130,22 @@ class ConvDecoder(ConvEncoder):
 
 
 ## Variational Encoders
-class VariationalEncoder(Encoder):
+class VariationalEncoderBase(nn.Module):
     """
     """
     def __init__(self,
                  num_filters:List[int],
                  input_shape:List[int],
-                 latent_dim:int):
+                 latent_dim:int,
+                 **kwargs):
         """
         :param num_filters: List[int]
         :param input_shape: List[int]
-        :param latent_dim: List[int]
+        :param latent_dim: int
         """
-        super(VariationalEncoder, self).__init__(num_filters, input_shape)
+        super(VariationalEncoderBase, self).__init__(num_filters,
+                                                     input_shape,
+                                                     **kwargs)
         self.latent_dim_mu = nn.Linear(num_filters[-1], latent_dim)
         self.latent_dim_sigma = nn.Linear(num_filters[-1], latent_dim)
         self.log_scale = nn.Parameter(torch.Tensor([0.0]))
@@ -183,3 +187,47 @@ class VariationalEncoder(Encoder):
         kl = (log_qzx - log_pz)
         kl = kl.sum(-1)
         return kl
+
+class FCVariationalEncoder(VariationalEncoderBase, Encoder):
+    def __init__(self,
+                 num_filters:List[int],
+                 input_shape:List[int],
+                 latent_dim:int,
+                 **kwargs):
+        """
+        :param num_filters: List[int]
+        :param input_shape: List[int]
+        :param latent_dim: List[int]
+        """
+        super(FCVariationalEncoder, self).__init__(num_filters,
+                                                   input_shape,
+                                                   latent_dim,
+                                                   **kwargs)
+
+class ConvVariationalEncoder(VariationalEncoderBase, ConvEncoder):
+    def __init__(self,
+                 num_filters:List[int],
+                 input_shape:List[int],
+                 latent_dim:int,
+                 kernel_size:List[int],
+                 stride:List[int],
+                 padding:List[int],
+                 padding_mode:str='zeros',
+                 **kwargs):
+        """
+        :param num_filters: List[int]
+        :param input_shape: List[int]
+        :param latent_dim: int
+        :param kernel_size: List[int]
+        :param stride: List[int]
+        :param padding: List[int]
+        :param padding_mode: str
+        """
+        super(ConvVariationalEncoder, self).__init__(num_filters,
+                                                   input_shape,
+                                                   latent_dim,
+                                                   **{"kernel_size":kernel_size,
+                                                    "stride":stride,
+                                                    "padding":padding,
+                                                    "padding_mode":padding_mode,
+                                                    **kwargs})
