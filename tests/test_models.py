@@ -57,9 +57,9 @@ def test_AE_build(layers_shapes, input_shape):
     output = test_V.forward(torch.ones((1,*input_shape)))
     assert output.shape == (1, *input_shape)
 
-@pytest.mark.parametrize("num_filters,input_shape,latent_dims,kernel_size,stride,padding,padding_mode",
-                         [([3,6,9], [1, 30, 30],3,[2,2,2],[1,1,1],[0,0,0],"zeros"),
-                         ([10,20,30,40], [1, 100, 100],3,[5,5,2,2],[1,1,1,1],[0,0,0,0],"zeros"),])
-def test_ConvEncoder_build(num_filters,input_shape,latent_dims,kernel_size,stride,padding,padding_mode):
-    test_CE = CE(num_filters,input_shape,latent_dims,kernel_size,stride,padding,padding_mode)
+@pytest.mark.parametrize("num_filters,input_shape,kernel_size,stride,padding,padding_mode",
+                         [([3,6,9], [1, 30, 30],[2,2,2],[1,1,1],[0,0,0],"zeros"),
+                         ([10,20,30,40], [1, 100, 100],[5,5,2,2],[1,1,1,1],[0,0,0,0],"zeros"),])
+def test_ConvEncoder_build(num_filters,input_shape,kernel_size,stride,padding,padding_mode):
+    test_CE = CE(num_filters,input_shape,kernel_size,stride,padding,padding_mode)
     output = test_CE.forward(torch.ones(1, *input_shape))
