@@ -3,7 +3,7 @@
 """
 """
 
-from typing import List
+from typing import List, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -69,10 +69,12 @@ class ConvEncoder(nn.Module):
     def __init__(self,
                  num_filters:List[int],
                  input_shape:List[int],
-                 kernel_size:List[int],
-                 stride:List[int],
-                 padding:List[int],
+                 kernel_size:Union[List[int], List[list]],
+                 stride:Union[List[int], List[list]],
+                 padding:Union[List[int], List[list]],
                  padding_mode:str='zeros',
+                 dilation:Union[List[int], List[list]]=[1,1],
+                 transpose:bool=False,
                  **kwargs):
         """
         Configurable convolutional encoder.
@@ -80,7 +82,6 @@ class ConvEncoder(nn.Module):
                             each convolutional layer.
         :param input_shape: List[int], input shape to
                             first conv layer.
-        :param latent_dims: int,
         :param kernel_size: List[int], kernel_size
         :param stride: List[int]
         :param padding: List[int]
@@ -89,26 +90,46 @@ class ConvEncoder(nn.Module):
         """
         super(ConvEncoder, self).__init__(**kwargs)
         # Check all inputs have same dims
-        input_lists = [num_filters, kernel_size, stride, padding]
+        input_lists = [num_filters, kernel_size, stride, padding, dilation, padding_mode]
         u.check_input_lists(input_lists)
         
         # Construct the convolutional layers
         self.layers = nn.ModuleList()
         for i, item in enumerate(num_filters):
             if i == 0:
-                self.layers.append(nn.Conv2d(input_shape[0],
-                                             item,
-                                             kernel_size=kernel_size[i],
-                                             stride=stride[i],
-                                             padding=padding[i],
-                                             padding_mode=padding_mode))
+                if transpose:
+                    self.layers.append(nn.ConvTranspose2d(input_shape[0],
+                                                        item,
+                                                        kernel_size=kernel_size[i],
+                                                        stride=stride[i],
+                                                        padding=padding[i],
+                                                        padding_mode=padding_mode[i],
+                                                        dilation=dilation[i]))
+                else:
+                    self.layers.append(nn.Conv2d(input_shape[0],
+                                                item,
+                                                kernel_size=kernel_size[i],
+                                                stride=stride[i],
+                                                padding=padding[i],
+                                                padding_mode=padding_mode[i],
+                                                dilation=dilation[i]))
             else:
-                self.layers.append(nn.Conv2d(num_filters[i-1],
-                                             item,
-                                             kernel_size=kernel_size[i],
-                                             stride=stride[i],
-                                             padding=padding[i],
-                                             padding_mode=padding_mode))
+                if transpose:
+                    self.layers.append(nn.ConvTranspose2d(num_filters[i-1],
+                                                item,
+                                                kernel_size=kernel_size[i],
+                                                stride=stride[i],
+                                                padding=padding[i],
+                                                padding_mode=padding_mode[i],
+                                                dilation=dilation[i]))
+                else:
+                    self.layers.append(nn.Conv2d(num_filters[i-1],
+                                                item,
+                                                kernel_size=kernel_size[i],
+                                                stride=stride[i],
+                                                padding=padding[i],
+                                                padding_mode=padding_mode[i],
+                                                dilation=dilation[i]))
 
 
     def forward(self, x:torch.Tensor)->torch.Tensor:
@@ -119,14 +140,6 @@ class ConvEncoder(nn.Module):
         for layer in self.layers:
             x = F.relu(layer(x))
         return x
-
-
-class ConvDecoder(ConvEncoder):
-
-    def forward(self, x):
-        """
-        """
-        raise NotImplementedError
 
 
 ## Variational Encoders
@@ -165,7 +178,7 @@ class VariationalEncoderBase(nn.Module):
 
         # measure prob of seeing data x given recon x_hat
         log_pxz = dist.log_prob(x)
-        return log_pxz.sum(dim=(range(len(self.input_shape))))
+        return log_pxz.sum(dim=(list(range(1, len(self.input_shape)+1))))
     
     def kl_divergence(self,
                       z:torch.Tensor,
@@ -209,10 +222,12 @@ class ConvVariationalEncoder(VariationalEncoderBase, ConvEncoder):
                  num_filters:List[int],
                  input_shape:List[int],
                  latent_dim:int,
-                 kernel_size:List[int],
-                 stride:List[int],
-                 padding:List[int],
+                 kernel_size:Union[List[int], List[list]],
+                 stride:Union[List[int], List[list]],
+                 padding:Union[List[int], List[list]],
                  padding_mode:str='zeros',
+                 dilation:Union[List[int], List[list]]=[1,1],
+                 transpose:bool=False,
                  **kwargs):
         """
         :param num_filters: List[int]
@@ -230,4 +245,6 @@ class ConvVariationalEncoder(VariationalEncoderBase, ConvEncoder):
                                                     "stride":stride,
                                                     "padding":padding,
                                                     "padding_mode":padding_mode,
+                                                    "dilation":dilation,
+                                                    "transpose":transpose,
                                                     **kwargs})
