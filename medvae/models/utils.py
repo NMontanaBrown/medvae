@@ -33,6 +33,38 @@ def reverse_lists(input_list:List[list]):
         new_list.append(reverse_list.reverse())
     return new_list
 
+def process_list_params(input_list:list):
+    """
+    For a given list of unknown types, convert to
+    len(2,) ints in the case of encountering an int,
+    or maintain List[int] entry.
+    :raise: ValueError
+    :return: List[List[int]]
+    """
+    return_list = []
+    for item in input_list:
+        if type(item) == int:
+            return_list.append([item for i in range(2)])
+        if type(item) == List[int]:
+            return_list.append(item)
+        else:
+            raise ValueError("One of the items in input is neither an int or a List[int]")
+    return return_list
+
+def process_convolutional_inputs(input_list:List[list]):
+    """
+    For inputs to convolutional network builder,
+    check and process each such that they are
+    all List[List[int]]
+    :param input_list: List[list], of unknown types.
+    :raises:
+    :return: List[List]
+    """
+    conv_inputs = []
+    for item in input_list:
+        conv_inputs.append(process_list_params(item))
+    return conv_inputs
+
 def calculate_final_layer_size(num_filters:int,
                                input_shape:List[int],
                                kernel_size:List[int],
