@@ -29,8 +29,7 @@ def reverse_lists(input_list:List[list]):
     check_input_lists(input_list)
     new_list = []
     for item in input_list:
-        reverse_list = copy.deepcopy(item)
-        new_list.append(reverse_list.reverse())
+        new_list.append(item[::-1])
     return new_list
 
 def process_list_params(input_list:list):
@@ -43,10 +42,10 @@ def process_list_params(input_list:list):
     """
     return_list = []
     for item in input_list:
-        if type(item) == int:
+        if isinstance(item, int):
             return_list.append([item for i in range(2)])
-        if type(item) == List[int]:
-            return_list.append(item)
+        elif isinstance(item, list) and all(isinstance(i, int) for i in item):
+                return_list.append(item)
         else:
             raise ValueError("One of the items in input is neither an int or a List[int]")
     return return_list
@@ -92,7 +91,8 @@ def calculate_size_series_conv(num_filters:List[int],
                                kernel_size:List[list],
                                stride:List[list],
                                padding:List[list],
-                               dilation:List[list]):
+                               dilation:List[list],
+                               return_all_shapes:bool=False):
     """
     Function to calculate the final
     tensor size through a convolutional
@@ -105,6 +105,9 @@ def calculate_size_series_conv(num_filters:List[int],
                       padding,
                       dilation])
     out_shape = input_shape
+    all_shapes = []
+    all_shapes.append(input_shape)
+
     for i, _ in enumerate(kernel_size):
         out_shape = calculate_final_layer_size(num_filters[i],
                                                out_shape,
@@ -112,4 +115,7 @@ def calculate_size_series_conv(num_filters:List[int],
                                                stride[i],
                                                padding[i],
                                                dilation[i])
+        all_shapes.append(out_shape)
+    if return_all_shapes:
+        return out_shape, all_shapes
     return out_shape
