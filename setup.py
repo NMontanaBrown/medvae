@@ -52,6 +52,10 @@ setup(
 
     install_requires=[
         'numpy',
+        'torch',
+        'pytorch-lightning',
+        'matplotlib',
+        'medmnist',
     ],
 
     entry_points={
