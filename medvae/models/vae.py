@@ -28,6 +28,7 @@ class VAEBase(pl.LightningModule):
         super(VAEBase, self).__init__(**kwargs)
         self.encoder = None
         self.decoder = None
+        self.convolutional_encoder = False
 
     def build_network(self,):
         raise NotImplementedError
@@ -43,11 +44,15 @@ class VAEBase(pl.LightningModule):
         std = torch.exp(sigma / 2)
         q = torch.distributions.Normal(mu, std)
         z_latent = q.rsample()
-        z = self.decoder_bridge(z_latent)
-        z = self.decoder_bridge_1(z)
+        if self.convolutional_encoder:
+            z = self.decoder_bridge(z_latent)
+            z = self.decoder_bridge_1(z)
+        else:
+            z = z_latent
 
         x_hat = self.decoder(z.view(-1, *self.encoder.out_shape)) # P(x|z)
-        x_hat = F.relu(self.last_conv(x_hat))
+        if self.convolutional_encoder:
+            x_hat = F.relu(self.last_conv(x_hat))
         recon_loss = self.encoder.gaussian_likelihood(x_hat,
                                                       self.encoder.log_scale,
                                                       x)
@@ -116,6 +121,7 @@ class ConvVAE(VAEBase):
         """
         super(ConvVAE, self).__init__(**kwargs)
         self.latent_dim = latent_dim
+        self.convolutional_encoder = True
         self.build_network(num_filters,
                            input_shape,
                            latent_dim,
@@ -152,7 +158,6 @@ class ConvVAE(VAEBase):
                                                 padding_mode,
                                                 dilation,
                                                 **kwargs)
-        print("Encoder", self.encoder)
         conv_inputs = u.process_convolutional_inputs([kernel_size, stride, padding, dilation])
         kernel_size, stride, padding, dilation = conv_inputs
         reversed_conv_params = u.reverse_lists([kernel_size,

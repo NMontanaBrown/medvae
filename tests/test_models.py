@@ -8,7 +8,7 @@ import pytest
 import torch
 from medvae.models import encoder as e
 from medvae.models.ae import AE as V
-from medvae.models.vae import ConvVAE
+from medvae.models.vae import ConvVAE, FCVAE
 
 
 @pytest.mark.parametrize("layers_shapes,input_shape", [([10,5,4], [1, 5, 2],),
@@ -42,3 +42,10 @@ def test_convVae():
                   dilation=[2,1,1,1])
     out = enc.training_step([torch.ones((1,1,100,40)), None], 0)
     assert list(out.shape) == [1]
+
+def test_FCVae():
+    """
+    """
+    vae = FCVAE([36,6,5,3], [1,6,6], 2)
+    output = vae.training_step([torch.ones((1,1,6,6)), None], 0)
+
