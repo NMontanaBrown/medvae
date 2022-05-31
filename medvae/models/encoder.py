@@ -264,6 +264,7 @@ class FCVariationalEncoder(VariationalEncoderBase, Encoder):
                                                    input_shape,
                                                    latent_dim,
                                                    **kwargs)
+        self.out_shape = [latent_dim]
 
 class ConvVariationalEncoder(VariationalEncoderBase, ConvEncoder):
     def __init__(self,
